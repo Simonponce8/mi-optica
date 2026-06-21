@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { supabase } from "../../../lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -19,7 +19,7 @@ const validarGrad = (val) => {
   return Math.round(n * 100) % 25 === 0;
 };
 
-export default function NuevaFicha() {
+function NuevaFichaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const clienteId = searchParams.get("cliente_id");
@@ -326,5 +326,12 @@ export default function NuevaFicha() {
         </div>
       </div>
     </div>
+  );
+}
+export default function NuevaFicha() {
+  return (
+    <Suspense fallback={<div style={{ padding: "40px", color: "#6b7a8f" }}>Cargando...</div>}>
+      <NuevaFichaContent />
+    </Suspense>
   );
 }
