@@ -50,6 +50,7 @@ export default function EditarFicha() {
     stock: "",
     laboratorio: "",
     marca: "",
+    anteojo_cerca: "",
     monto_total: "",
     sena: "",
     observaciones: "",
@@ -86,6 +87,7 @@ export default function EditarFicha() {
           stock: ficha.stock || "",
           laboratorio: ficha.laboratorio || "",
           marca: ficha.marca || "",
+          anteojo_cerca: ficha.anteojo_cerca || "",
           monto_total: ficha.monto_total ?? "",
           sena: ficha.sena ?? "",
           observaciones: ficha.observaciones || "",
@@ -164,6 +166,7 @@ export default function EditarFicha() {
     datos.stock = form.stock;
     datos.laboratorio = form.laboratorio;
     datos.marca = form.marca;
+    datos.anteojo_cerca = form.anteojo_cerca;
     datos.monto_total = parseFloat(form.monto_total) || 0;
     datos.sena = parseFloat(form.sena) || 0;
     datos.observaciones = form.observaciones;
@@ -216,6 +219,7 @@ export default function EditarFicha() {
     { label: "Ventas", path: "/ventas" },
     { label: "Cuenta corriente", path: "/cuenta-corriente" },
     { label: "Por oftalmologo", path: "/oftalmologos" },
+    { label: "Eval. Neurosensorial", path: "/neurosensorial" },
   ];
 
   if (loadingDatos) return <div style={{ padding: "40px", color: "#6b7a8f" }}>Cargando...</div>;
@@ -325,6 +329,18 @@ export default function EditarFicha() {
                   <option value="FBD">FBD</option>
                   <option value="Varilux">Varilux</option>
                 </select>
+              </div>
+            </div>
+
+            <div style={{ borderTop: "1px solid #f0f2f5", paddingTop: "16px" }}>
+              <div style={{ fontSize: "12px", color: "#6b7a8f", marginBottom: "8px" }}>Anteojo cerca</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {["Org Bco", "Vuble", "Fortis"].map(op => (
+                  <label key={op} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "6px 12px", borderRadius: "20px", border: "1px solid #dde3ec", fontSize: "13px", cursor: "pointer", background: form.anteojo_cerca === op ? "#E6F1FB" : "#fff", color: form.anteojo_cerca === op ? "#185FA5" : "#1e3a5f" }}>
+                    <input type="checkbox" checked={form.anteojo_cerca === op} onChange={() => setForm({ ...form, anteojo_cerca: form.anteojo_cerca === op ? "" : op })} style={{ cursor: "pointer" }} />
+                    {op}
+                  </label>
+                ))}
               </div>
             </div>
 
