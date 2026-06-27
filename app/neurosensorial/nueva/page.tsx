@@ -25,17 +25,23 @@ const inpStyle = { width: "100%", padding: "4px 6px", border: "none", fontSize: 
 function TdInput({ value, onChange }) {
   return <td style={tdStyle}><input value={value} onChange={onChange} style={inpStyle} /></td>;
 }
-function BtnOpc({ value, onChange, opciones }) {
+
+function BtnOpcMulti({ values, onToggle, opciones }) {
+  const seleccionadas = values || [];
   return (
     <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-      {opciones.map(op => (
-        <button key={op} type="button" onClick={() => onChange(op)} style={{ padding: "5px 12px", borderRadius: "20px", border: "1px solid", fontSize: "12px", cursor: "pointer", background: value === op ? "#185FA5" : "#f4f7fb", color: value === op ? "#fff" : "#1e3a5f", borderColor: value === op ? "#185FA5" : "#dde3ec" }}>
-          {op}
-        </button>
-      ))}
+      {opciones.map(op => {
+        const activo = seleccionadas.includes(op);
+        return (
+          <button key={op} type="button" onClick={() => onToggle(op)} style={{ padding: "5px 12px", borderRadius: "20px", border: "1px solid", fontSize: "12px", cursor: "pointer", background: activo ? "#185FA5" : "#f4f7fb", color: activo ? "#fff" : "#1e3a5f", borderColor: activo ? "#185FA5" : "#dde3ec" }}>
+            {op}
+          </button>
+        );
+      })}
     </div>
   );
 }
+
 function Seccion({ titulo, abierto, onToggle, children }) {
   return (
     <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", marginBottom: "10px", overflow: "hidden" }}>
@@ -76,16 +82,16 @@ export default function NuevaEvaluacion() {
     cover_sc_vl: "", cover_sc_vp40: "", cover_sc_vp20: "",
     cover_cc_vl: "", cover_cc_vp40: "", cover_cc_vp20: "",
     ppc_or: "", ppc_sf: "", ppc_cf: "",
-    seg_calidad: "", seg_mov_cab: "", seg_tiempo: "", seg_cognitivo: "",
-    sac_calidad: "", sac_mov_cab: "", sac_hipo_hiper: "", sac_tiempo: "",
-    campo_visual: "", equilibrio: "", linea_media: "",
-    ps: "", fusion_ldw: "", sensibilidad_contraste: "", estereopsis: "",
+    seg_calidad: [], seg_mov_cab: [], seg_tiempo: [], seg_cognitivo: [],
+    sac_calidad: [], sac_mov_cab: [], sac_hipo_hiper: [], sac_tiempo: [],
+    campo_visual: [], equilibrio: [], linea_media: [],
+    ps: [], fusion_ldw: [], sensibilidad_contraste: "", estereopsis: "",
     aa_od: "", aa_od_av: "", aa_oi: "", aa_oi_av: "", aa_arn: "", aa_arn_av: "", aa_arp: "", aa_arp_av: "",
     flex_od_mon_cpm: "", flex_od_mon_falla: "", flex_oi_mon_cpm: "", flex_oi_mon_falla: "",
     flex_od_bin_cpm: "", flex_od_bin_falla: "",
-    diagnostico_vergencia: "", diagnostico_acomodativo: "", diagnostico_oculomotor: "",
-    diagnostico_estrabismo: "", diagnostico_ambliopia: "", diagnostico_perceptual: "",
-    diagnostico_lectura: "", diagnostico_otros: "", notas_diagnostico: "", puntos_clave: "",
+    diagnostico_vergencia: [], diagnostico_acomodativo: [], diagnostico_oculomotor: [],
+    diagnostico_estrabismo: [], diagnostico_ambliopia: [], diagnostico_perceptual: [],
+    diagnostico_lectura: [], diagnostico_otros: "", notas_diagnostico: "", puntos_clave: "",
   });
 
   useEffect(() => {
@@ -102,13 +108,15 @@ export default function NuevaEvaluacion() {
   const toggle = (key) => setAbiertos(prev => ({ ...prev, [key]: !prev[key] }));
   const toggleDiag = (key) => setDiagAbiertos(prev => ({ ...prev, [key]: !prev[key] }));
 
-  const toggleSintoma = (sintoma) => {
+  const toggleMulti = (name, opcion) => {
     setForm(prev => {
-      const actuales = prev.sintomas_lectura || [];
-      const yaEsta = actuales.includes(sintoma);
-      return { ...prev, sintomas_lectura: yaEsta ? actuales.filter(s => s !== sintoma) : [...actuales, sintoma] };
+      const actuales = prev[name] || [];
+      const yaEsta = actuales.includes(opcion);
+      return { ...prev, [name]: yaEsta ? actuales.filter(s => s !== opcion) : [...actuales, opcion] };
     });
   };
+
+  const toggleSintoma = (sintoma) => toggleMulti("sintomas_lectura", sintoma);
 
   const crearCliente = async () => {
     if (!nuevoCliente.nombre || !nuevoCliente.apellido) {
@@ -413,32 +421,32 @@ export default function NuevaEvaluacion() {
             <div style={{ marginBottom: "16px" }}>
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#1e3a5f", marginBottom: "10px" }}>Seguimientos</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "14px" }}>
-                <div>{lbl("Calidad")}<BtnOpc value={form.seg_calidad} onChange={(v) => set("seg_calidad", v)} opciones={["1", "2", "3", "4"]} /></div>
-                <div>{lbl("Mov. de cabeza")}<BtnOpc value={form.seg_mov_cab} onChange={(v) => set("seg_mov_cab", v)} opciones={["1", "2", "3", "4"]} /></div>
-                <div>{lbl("Tiempo")}<BtnOpc value={form.seg_tiempo} onChange={(v) => set("seg_tiempo", v)} opciones={["\u2193", "\u2191", "="]} /></div>
-                <div>{lbl("Cognitivo")}<BtnOpc value={form.seg_cognitivo} onChange={(v) => set("seg_cognitivo", v)} opciones={["1", "2", "3", "4"]} /></div>
+                <div>{lbl("Calidad")}<BtnOpcMulti values={form.seg_calidad} onToggle={(op) => toggleMulti("seg_calidad", op)} opciones={["1", "2", "3", "4"]} /></div>
+                <div>{lbl("Mov. de cabeza")}<BtnOpcMulti values={form.seg_mov_cab} onToggle={(op) => toggleMulti("seg_mov_cab", op)} opciones={["1", "2", "3", "4"]} /></div>
+                <div>{lbl("Tiempo")}<BtnOpcMulti values={form.seg_tiempo} onToggle={(op) => toggleMulti("seg_tiempo", op)} opciones={["\u2193", "\u2191", "="]} /></div>
+                <div>{lbl("Cognitivo")}<BtnOpcMulti values={form.seg_cognitivo} onToggle={(op) => toggleMulti("seg_cognitivo", op)} opciones={["1", "2", "3", "4"]} /></div>
               </div>
             </div>
             <div style={{ marginBottom: "16px" }}>
               <div style={{ fontSize: "12px", fontWeight: "600", color: "#1e3a5f", marginBottom: "10px" }}>Sacadicos</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "14px" }}>
-                <div>{lbl("Calidad")}<BtnOpc value={form.sac_calidad} onChange={(v) => set("sac_calidad", v)} opciones={["1", "2", "3", "4"]} /></div>
-                <div>{lbl("Mov. de cabeza")}<BtnOpc value={form.sac_mov_cab} onChange={(v) => set("sac_mov_cab", v)} opciones={["1", "2", "3", "4"]} /></div>
-                <div>{lbl("Hipo/Hiper")}<BtnOpc value={form.sac_hipo_hiper} onChange={(v) => set("sac_hipo_hiper", v)} opciones={["HIPO", "HIPER", "-"]} /></div>
-                <div>{lbl("Tiempo")}<BtnOpc value={form.sac_tiempo} onChange={(v) => set("sac_tiempo", v)} opciones={["\u2193", "\u2191", "="]} /></div>
+                <div>{lbl("Calidad")}<BtnOpcMulti values={form.sac_calidad} onToggle={(op) => toggleMulti("sac_calidad", op)} opciones={["1", "2", "3", "4"]} /></div>
+                <div>{lbl("Mov. de cabeza")}<BtnOpcMulti values={form.sac_mov_cab} onToggle={(op) => toggleMulti("sac_mov_cab", op)} opciones={["1", "2", "3", "4"]} /></div>
+                <div>{lbl("Hipo/Hiper")}<BtnOpcMulti values={form.sac_hipo_hiper} onToggle={(op) => toggleMulti("sac_hipo_hiper", op)} opciones={["HIPO", "HIPER", "-"]} /></div>
+                <div>{lbl("Tiempo")}<BtnOpcMulti values={form.sac_tiempo} onToggle={(op) => toggleMulti("sac_tiempo", op)} opciones={["\u2193", "\u2191", "="]} /></div>
               </div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px" }}>
-              <div>{lbl("Campo visual")}<BtnOpc value={form.campo_visual} onChange={(v) => set("campo_visual", v)} opciones={["Correcto AO", "Trabajar OI", "Trabajar OD"]} /></div>
-              <div>{lbl("Equilibrio")}<BtnOpc value={form.equilibrio} onChange={(v) => set("equilibrio", v)} opciones={["Correcto", "Presenta dificultad"]} /></div>
-              <div>{lbl("Linea media")}<BtnOpc value={form.linea_media} onChange={(v) => set("linea_media", v)} opciones={["Correcta", "Desplaz Der", "Desplaz Izq", "Desplaz Arriba", "Desplaz Abajo"]} /></div>
+              <div>{lbl("Campo visual")}<BtnOpcMulti values={form.campo_visual} onToggle={(op) => toggleMulti("campo_visual", op)} opciones={["Correcto AO", "Trabajar OI", "Trabajar OD"]} /></div>
+              <div>{lbl("Equilibrio")}<BtnOpcMulti values={form.equilibrio} onToggle={(op) => toggleMulti("equilibrio", op)} opciones={["Correcto", "Presenta dificultad"]} /></div>
+              <div>{lbl("Linea media")}<BtnOpcMulti values={form.linea_media} onToggle={(op) => toggleMulti("linea_media", op)} opciones={["Correcta", "Desplaz Der", "Desplaz Izq", "Desplaz Arriba", "Desplaz Abajo"]} /></div>
             </div>
           </Seccion>
 
           <Seccion titulo="Evaluacion Sensorial" abierto={abiertos.sensorial} onToggle={() => toggle("sensorial")}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
-              <div>{lbl("PS")}<BtnOpc value={form.ps} onChange={(v) => set("ps", v)} opciones={["Presente", "Ausente"]} /></div>
-              <div>{lbl("Fusion LDW")}<BtnOpc value={form.fusion_ldw} onChange={(v) => set("fusion_ldw", v)} opciones={["Fusion", "Supresion OD", "Supresion OI", "Supresion alternante", "Diplopia horizontal cruzada", "Diplopia horizontal homonima", "Diplopia vertical", "Respuesta variable", "No concluyente"]} /></div>
+              <div>{lbl("PS")}<BtnOpcMulti values={form.ps} onToggle={(op) => toggleMulti("ps", op)} opciones={["Presente", "Ausente"]} /></div>
+              <div>{lbl("Fusion LDW")}<BtnOpcMulti values={form.fusion_ldw} onToggle={(op) => toggleMulti("fusion_ldw", op)} opciones={["Fusion", "Supresion OD", "Supresion OI", "Supresion alternante", "Diplopia horizontal cruzada", "Diplopia horizontal homonima", "Diplopia vertical", "Respuesta variable", "No concluyente"]} /></div>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
               <div>{lbl("Sensibilidad al contraste")}{inp("sensibilidad_contraste")}</div>
@@ -504,84 +512,84 @@ export default function NuevaEvaluacion() {
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("vergencia")} style={{ padding: "12px 16px", background: diagAbiertos.vergencia ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Vergencia {form.diagnostico_vergencia && "— " + form.diagnostico_vergencia}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Vergencia {form.diagnostico_vergencia && form.diagnostico_vergencia.length > 0 && "— " + form.diagnostico_vergencia.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.vergencia ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.vergencia && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_vergencia} onChange={(v) => set("diagnostico_vergencia", v)} opciones={["Insuficiencia de convergencia (IC)", "Exceso de convergencia (EC)", "Insuficiencia de divergencia (ID)", "Exceso de divergencia (ED)"]} />
+                    <BtnOpcMulti values={form.diagnostico_vergencia} onToggle={(op) => toggleMulti("diagnostico_vergencia", op)} opciones={["Insuficiencia de convergencia (IC)", "Exceso de convergencia (EC)", "Insuficiencia de divergencia (ID)", "Exceso de divergencia (ED)"]} />
                   </div>
                 )}
               </div>
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("acomodativo")} style={{ padding: "12px 16px", background: diagAbiertos.acomodativo ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Acomodativas {form.diagnostico_acomodativo && "— " + form.diagnostico_acomodativo}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Acomodativas {form.diagnostico_acomodativo && form.diagnostico_acomodativo.length > 0 && "— " + form.diagnostico_acomodativo.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.acomodativo ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.acomodativo && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_acomodativo} onChange={(v) => set("diagnostico_acomodativo", v)} opciones={["Insuficiencia acomodativa", "Exceso acomodativo", "Espasmo", "Pseudomiopia", "Inflexibilidad acomodativa", "Fatiga acomodativa"]} />
+                    <BtnOpcMulti values={form.diagnostico_acomodativo} onToggle={(op) => toggleMulti("diagnostico_acomodativo", op)} opciones={["Insuficiencia acomodativa", "Exceso acomodativo", "Espasmo", "Pseudomiopia", "Inflexibilidad acomodativa", "Fatiga acomodativa"]} />
                   </div>
                 )}
               </div>
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("oculomotor")} style={{ padding: "12px 16px", background: diagAbiertos.oculomotor ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Oculomotoras {form.diagnostico_oculomotor && "— " + form.diagnostico_oculomotor}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Oculomotoras {form.diagnostico_oculomotor && form.diagnostico_oculomotor.length > 0 && "— " + form.diagnostico_oculomotor.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.oculomotor ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.oculomotor && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_oculomotor} onChange={(v) => set("diagnostico_oculomotor", v)} opciones={["Disfuncion de sacadicos", "Disfuncion de seguimientos", "Disfuncion de fijacion", "Nistagmo latente", "Nistagmo manifiesto"]} />
+                    <BtnOpcMulti values={form.diagnostico_oculomotor} onToggle={(op) => toggleMulti("diagnostico_oculomotor", op)} opciones={["Disfuncion de sacadicos", "Disfuncion de seguimientos", "Disfuncion de fijacion", "Nistagmo latente", "Nistagmo manifiesto"]} />
                   </div>
                 )}
               </div>
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("estrabismo")} style={{ padding: "12px 16px", background: diagAbiertos.estrabismo ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Estrabismos {form.diagnostico_estrabismo && "— " + form.diagnostico_estrabismo}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Estrabismos {form.diagnostico_estrabismo && form.diagnostico_estrabismo.length > 0 && "— " + form.diagnostico_estrabismo.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.estrabismo ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.estrabismo && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_estrabismo} onChange={(v) => set("diagnostico_estrabismo", v)} opciones={["Endotropia constante", "Endotropia intermitente", "Exotropia constante", "Exotropia intermitente", "Hipertropia", "Hipotropia", "Microtropia"]} />
+                    <BtnOpcMulti values={form.diagnostico_estrabismo} onToggle={(op) => toggleMulti("diagnostico_estrabismo", op)} opciones={["Endotropia constante", "Endotropia intermitente", "Exotropia constante", "Exotropia intermitente", "Hipertropia", "Hipotropia", "Microtropia"]} />
                   </div>
                 )}
               </div>
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("ambliopia")} style={{ padding: "12px 16px", background: diagAbiertos.ambliopia ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Ambliopia {form.diagnostico_ambliopia && "— " + form.diagnostico_ambliopia}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Ambliopia {form.diagnostico_ambliopia && form.diagnostico_ambliopia.length > 0 && "— " + form.diagnostico_ambliopia.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.ambliopia ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.ambliopia && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_ambliopia} onChange={(v) => set("diagnostico_ambliopia", v)} opciones={["Ambliopia refractiva anisometropica", "Ambliopia refractiva isoametropica", "Ambliopia estrabica", "Ambliopia mixta", "Ambliopia por deprivacion"]} />
+                    <BtnOpcMulti values={form.diagnostico_ambliopia} onToggle={(op) => toggleMulti("diagnostico_ambliopia", op)} opciones={["Ambliopia refractiva anisometropica", "Ambliopia refractiva isoametropica", "Ambliopia estrabica", "Ambliopia mixta", "Ambliopia por deprivacion"]} />
                   </div>
                 )}
               </div>
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("perceptual")} style={{ padding: "12px 16px", background: diagAbiertos.perceptual ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Perceptual / Procesamiento visual {form.diagnostico_perceptual && "— " + form.diagnostico_perceptual}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Perceptual / Procesamiento visual {form.diagnostico_perceptual && form.diagnostico_perceptual.length > 0 && "— " + form.diagnostico_perceptual.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.perceptual ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.perceptual && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_perceptual} onChange={(v) => set("diagnostico_perceptual", v)} opciones={["Disfuncion de memoria visual", "Disfuncion de cierre visual", "Disfuncion de discriminacion figura-fondo", "Disfuncion de relaciones espaciales", "Disfuncion de integracion visomotora", "Lentitud de procesamiento visual"]} />
+                    <BtnOpcMulti values={form.diagnostico_perceptual} onToggle={(op) => toggleMulti("diagnostico_perceptual", op)} opciones={["Disfuncion de memoria visual", "Disfuncion de cierre visual", "Disfuncion de discriminacion figura-fondo", "Disfuncion de relaciones espaciales", "Disfuncion de integracion visomotora", "Lentitud de procesamiento visual"]} />
                   </div>
                 )}
               </div>
 
               <div style={{ border: "1px solid #dde3ec", borderRadius: "8px", overflow: "hidden" }}>
                 <div onClick={() => toggleDiag("lectura")} style={{ padding: "12px 16px", background: diagAbiertos.lectura ? "#f4f7fb" : "#fff", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Lectura {form.diagnostico_lectura && "— " + form.diagnostico_lectura}</span>
+                  <span style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f" }}>Lectura {form.diagnostico_lectura && form.diagnostico_lectura.length > 0 && "— " + form.diagnostico_lectura.join(", ")}</span>
                   <span style={{ fontSize: "14px", color: "#185FA5" }}>{diagAbiertos.lectura ? "▲" : "▶"}</span>
                 </div>
                 {diagAbiertos.lectura && (
                   <div style={{ padding: "14px 16px", borderTop: "1px solid #f0f2f5" }}>
-                    <BtnOpc value={form.diagnostico_lectura} onChange={(v) => set("diagnostico_lectura", v)} opciones={["Velocidad lectora baja", "Exceso de regresiones", "Perdida de linea"]} />
+                    <BtnOpcMulti values={form.diagnostico_lectura} onToggle={(op) => toggleMulti("diagnostico_lectura", op)} opciones={["Velocidad lectora baja", "Exceso de regresiones", "Perdida de linea"]} />
                   </div>
                 )}
               </div>
@@ -590,17 +598,17 @@ export default function NuevaEvaluacion() {
               <div>{lbl("Notas del diagnostico")}{ta("notas_diagnostico", 3)}</div>
               <div>{lbl("Puntos clave a trabajar en terapia")}{ta("puntos_clave", 3)}</div>
 
-              {(form.diagnostico_vergencia || form.diagnostico_acomodativo || form.diagnostico_oculomotor || form.diagnostico_estrabismo || form.diagnostico_ambliopia || form.diagnostico_perceptual || form.diagnostico_lectura || form.diagnostico_otros) && (
+              {((form.diagnostico_vergencia && form.diagnostico_vergencia.length > 0) || (form.diagnostico_acomodativo && form.diagnostico_acomodativo.length > 0) || (form.diagnostico_oculomotor && form.diagnostico_oculomotor.length > 0) || (form.diagnostico_estrabismo && form.diagnostico_estrabismo.length > 0) || (form.diagnostico_ambliopia && form.diagnostico_ambliopia.length > 0) || (form.diagnostico_perceptual && form.diagnostico_perceptual.length > 0) || (form.diagnostico_lectura && form.diagnostico_lectura.length > 0) || form.diagnostico_otros) && (
                 <div style={{ background: "#E6F1FB", borderRadius: "8px", padding: "16px", marginTop: "10px" }}>
                   <div style={{ fontSize: "13px", fontWeight: "600", color: "#185FA5", marginBottom: "10px" }}>Resumen del diagnostico</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: "6px", fontSize: "13px" }}>
-                    {form.diagnostico_vergencia && <div><span style={{ color: "#6b7a8f" }}>Vergencia: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_vergencia}</span></div>}
-                    {form.diagnostico_acomodativo && <div><span style={{ color: "#6b7a8f" }}>Acomodativas: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_acomodativo}</span></div>}
-                    {form.diagnostico_oculomotor && <div><span style={{ color: "#6b7a8f" }}>Oculomotoras: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_oculomotor}</span></div>}
-                    {form.diagnostico_estrabismo && <div><span style={{ color: "#6b7a8f" }}>Estrabismos: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_estrabismo}</span></div>}
-                    {form.diagnostico_ambliopia && <div><span style={{ color: "#6b7a8f" }}>Ambliopia: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_ambliopia}</span></div>}
-                    {form.diagnostico_perceptual && <div><span style={{ color: "#6b7a8f" }}>Perceptual: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_perceptual}</span></div>}
-                    {form.diagnostico_lectura && <div><span style={{ color: "#6b7a8f" }}>Lectura: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_lectura}</span></div>}
+                    {form.diagnostico_vergencia && form.diagnostico_vergencia.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Vergencia: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_vergencia.join(", ")}</span></div>}
+                    {form.diagnostico_acomodativo && form.diagnostico_acomodativo.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Acomodativas: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_acomodativo.join(", ")}</span></div>}
+                    {form.diagnostico_oculomotor && form.diagnostico_oculomotor.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Oculomotoras: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_oculomotor.join(", ")}</span></div>}
+                    {form.diagnostico_estrabismo && form.diagnostico_estrabismo.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Estrabismos: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_estrabismo.join(", ")}</span></div>}
+                    {form.diagnostico_ambliopia && form.diagnostico_ambliopia.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Ambliopia: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_ambliopia.join(", ")}</span></div>}
+                    {form.diagnostico_perceptual && form.diagnostico_perceptual.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Perceptual: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_perceptual.join(", ")}</span></div>}
+                    {form.diagnostico_lectura && form.diagnostico_lectura.length > 0 && <div><span style={{ color: "#6b7a8f" }}>Lectura: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_lectura.join(", ")}</span></div>}
                     {form.diagnostico_otros && <div><span style={{ color: "#6b7a8f" }}>Otros: </span><span style={{ color: "#1e3a5f", fontWeight: "500" }}>{form.diagnostico_otros}</span></div>}
                   </div>
                 </div>
