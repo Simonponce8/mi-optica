@@ -35,8 +35,11 @@ export default function Clientes() {
     { label: "Lentes de contacto", path: "/lentes-contacto" },
     { label: "Ventas", path: "/ventas" },
     { label: "Cuenta corriente", path: "/cuenta-corriente" },
-{ label: "Por oftalmologo", path: "/oftalmologos" },
+    { label: "Por oftalmologo", path: "/oftalmologos" },
     { label: "Eval. Neurosensorial", path: "/neurosensorial" },
+    { label: "Terapias", path: "/terapias" },
+    { label: "Calendario Terapia", path: "/calendario-terapia" },
+    { label: "Horarios disponibles", path: "/horarios-disponibles" },
   ];
 
   return (

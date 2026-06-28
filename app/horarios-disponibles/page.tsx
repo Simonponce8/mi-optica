@@ -21,15 +21,19 @@ export default function HorariosDisponibles() {
   const [diasSeleccionados, setDiasSeleccionados] = useState([]);
   const [franja, setFranja] = useState("ambas");
   const [turnos, setTurnos] = useState([]);
-  const [horariosReservados, setHorariosReservados] = useState({});
   const [seleccionFinal, setSeleccionFinal] = useState({});
   const [mostrarImagen, setMostrarImagen] = useState(false);
+  const [reservados, setReservados] = useState({});
+  const [clientes, setClientes] = useState([]);
+  const [modalReserva, setModalReserva] = useState(null);
 
   useEffect(() => {
     const checkUser = async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session) { router.push("/"); return; }
       cargarTurnos();
+      const { data: cl } = await supabase.from("clientes").select("id, nombre, apellido").eq("es_paciente_terapia", true).order("apellido");
+      if (cl) setClientes(cl);
     };
     checkUser();
   }, []);
@@ -92,7 +96,7 @@ export default function HorariosDisponibles() {
   const generarTextoMensaje = () => {
     let texto = "TURNOS DISPONIBLES - TERAPIA VISUAL\n\n";
     Object.keys(seleccionFinal).sort().forEach(fechaStr => {
-      const horas = seleccionFinal[fechaStr];
+      const horas = (seleccionFinal[fechaStr] || []).filter(h => !reservados[fechaStr + "_" + h]);
       if (horas.length === 0) return;
       const fechaObj = new Date(fechaStr + "T00:00:00");
       const diaNombre = diasSemana[fechaObj.getDay()];
@@ -115,10 +119,24 @@ export default function HorariosDisponibles() {
     window.open("https://wa.me/?text=" + mensaje, "_blank");
   };
 
-  const confirmarReserva = async (fechaStr, hora) => {
-    await supabase.from("horarios_compartidos").insert([{ fecha: fechaStr, hora, reservado: true }]);
+  const abrirModalReserva = (fechaStr, hora) => {
+    setModalReserva({ fechaStr, hora, cliente_id: "" });
+  };
+
+  const confirmarReserva = async () => {
+    if (!modalReserva.cliente_id) { alert("Selecciona un paciente"); return; }
+    await supabase.from("horarios_compartidos").insert([{ fecha: modalReserva.fechaStr, hora: modalReserva.hora, reservado: true }]);
+    await supabase.from("turnos_terapia").insert([{
+      cliente_id: modalReserva.cliente_id,
+      fecha: modalReserva.fechaStr,
+      hora: modalReserva.hora,
+      duracion: 45,
+      estado: "Confirmado",
+    }]);
+    setReservados(prev => ({ ...prev, [modalReserva.fechaStr + "_" + modalReserva.hora]: true }));
+    setModalReserva(null);
     cargarTurnos();
-    alert("Horario marcado como reservado. Recorda crear el turno correspondiente en el Calendario de Terapia.");
+    alert("Turno creado y horario marcado como reservado.");
   };
 
   const menuItems = [
@@ -228,7 +246,7 @@ export default function HorariosDisponibles() {
           )}
 
           {totalSeleccionados > 0 && (
-            <div style={{ background: "#fff", border: "1px solid #dde3ec", borderRadius: "8px", padding: "20px" }}>
+            <div style={{ background: "#fff", border: "1px solid #dde3ec", borderRadius: "8px", padding: "20px", marginBottom: "20px" }}>
               <div style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f", marginBottom: "16px" }}>4. Compartir ({totalSeleccionados} horarios elegidos)</div>
 
               <div style={{ background: "#f4f7fb", borderRadius: "8px", padding: "16px", marginBottom: "16px", fontSize: "13px", color: "#1e3a5f", whiteSpace: "pre-wrap", fontFamily: "monospace" }}>
@@ -248,8 +266,65 @@ export default function HorariosDisponibles() {
               </div>
             </div>
           )}
+
+          {totalSeleccionados > 0 && (
+            <div style={{ background: "#fff", border: "1px solid #dde3ec", borderRadius: "8px", padding: "20px" }}>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f", marginBottom: "8px" }}>5. Marcar horario como reservado</div>
+              <div style={{ fontSize: "12px", color: "#6b7a8f", marginBottom: "14px" }}>
+                Cuando un paciente confirme uno de los horarios ofrecidos, marcalo aqui para crear el turno automaticamente y que deje de ofrecerse.
+              </div>
+              {Object.keys(seleccionFinal).sort().map(fechaStr => {
+                const horas = seleccionFinal[fechaStr] || [];
+                if (horas.length === 0) return null;
+                const fechaObj = new Date(fechaStr + "T00:00:00");
+                return (
+                  <div key={fechaStr} style={{ marginBottom: "12px" }}>
+                    <div style={{ fontSize: "12px", fontWeight: "600", color: "#1e3a5f", marginBottom: "6px" }}>
+                      {diasSemana[fechaObj.getDay()]} {fechaObj.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" })}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                      {horas.map(hora => {
+                        const yaReservado = reservados[fechaStr + "_" + hora];
+                        return (
+                          <button key={hora} disabled={yaReservado} onClick={() => abrirModalReserva(fechaStr, hora)} style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #dde3ec", fontSize: "12px", cursor: yaReservado ? "default" : "pointer", background: yaReservado ? "#EAF3DE" : "#f4f7fb", color: yaReservado ? "#27500A" : "#1e3a5f" }}>
+                            {hora} {yaReservado ? "✓ Reservado" : ""}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
+
+      {modalReserva && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
+          <div style={{ background: "#fff", borderRadius: "12px", padding: "24px", width: "360px" }}>
+            <div style={{ fontSize: "15px", fontWeight: "600", color: "#1e3a5f", marginBottom: "6px" }}>Confirmar reserva</div>
+            <div style={{ fontSize: "13px", color: "#6b7a8f", marginBottom: "16px" }}>
+              {modalReserva.fechaStr} a las {modalReserva.hora}
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <div style={{ fontSize: "12px", color: "#6b7a8f", marginBottom: "4px" }}>Paciente</div>
+              <select value={modalReserva.cliente_id} onChange={(e) => setModalReserva({ ...modalReserva, cliente_id: e.target.value })} style={{ width: "100%", padding: "8px 12px", border: "1px solid #dde3ec", borderRadius: "6px", fontSize: "14px", boxSizing: "border-box", background: "#fff" }}>
+                <option value="">Seleccionar...</option>
+                {clientes.map(c => <option key={c.id} value={c.id}>{c.apellido}, {c.nombre}</option>)}
+              </select>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button onClick={confirmarReserva} style={{ flex: 1, background: "#185FA5", color: "#fff", border: "none", borderRadius: "6px", padding: "10px", cursor: "pointer", fontSize: "13px" }}>
+                Confirmar y crear turno
+              </button>
+              <button onClick={() => setModalReserva(null)} style={{ background: "transparent", color: "#6b7a8f", border: "1px solid #dde3ec", borderRadius: "6px", padding: "10px 16px", cursor: "pointer", fontSize: "13px" }}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {mostrarImagen && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: "20px" }}>
@@ -261,7 +336,7 @@ export default function HorariosDisponibles() {
                 <div style={{ fontSize: "12px", color: "#b5d4f4", marginTop: "4px" }}>Simon Ponce</div>
               </div>
               {Object.keys(seleccionFinal).sort().map(fechaStr => {
-                const horas = seleccionFinal[fechaStr];
+                const horas = (seleccionFinal[fechaStr] || []).filter(h => !reservados[fechaStr + "_" + h]);
                 if (horas.length === 0) return null;
                 const fechaObj = new Date(fechaStr + "T00:00:00");
                 return (

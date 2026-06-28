@@ -91,6 +91,9 @@ export default function CuentaCorriente() {
     { label: "Cuenta corriente", path: "/cuenta-corriente" },
     { label: "Por oftalmologo", path: "/oftalmologos" },
     { label: "Eval. Neurosensorial", path: "/neurosensorial" },
+    { label: "Terapias", path: "/terapias" },
+    { label: "Calendario Terapia", path: "/calendario-terapia" },
+    { label: "Horarios disponibles", path: "/horarios-disponibles" },
   ];
 
   const Fila = ({ item }) => {

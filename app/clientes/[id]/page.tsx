@@ -11,6 +11,7 @@ export default function ClienteDetalle() {
   const [lentes, setLentes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [eliminando, setEliminando] = useState(null);
+  const [proximoTurno, setProximoTurno] = useState(null);
   const [esTerapia, setEsTerapia] = useState(false);
   const [guardandoTerapia, setGuardandoTerapia] = useState(false);
 
@@ -30,6 +31,9 @@ export default function ClienteDetalle() {
     if (fi) setFichas(fi);
     const { data: le } = await supabase.from("lentes_contacto").select("*").eq("cliente_id", params.id).order("fecha", { ascending: false });
     if (le) setLentes(le);
+    const hoy = new Date().toISOString().split("T")[0];
+    const { data: turno } = await supabase.from("turnos_terapia").select("*").eq("cliente_id", params.id).gte("fecha", hoy).neq("estado", "Cancelado").order("fecha", { ascending: true }).order("hora", { ascending: true }).limit(1);
+    if (turno && turno.length > 0) setProximoTurno(turno[0]);
     setLoading(false);
   };
 
@@ -155,6 +159,35 @@ export default function ClienteDetalle() {
               </label>
             </div>
           </div>
+
+          {esTerapia && (
+              <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0f2f5" }}>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: "#1e3a5f", marginBottom: "10px" }}>Proxima sesion de terapia</div>
+                {proximoTurno ? (
+                  <div style={{ background: "#E6F1FB", borderRadius: "8px", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: "13px", fontWeight: "600", color: "#185FA5" }}>
+                        {new Date(proximoTurno.fecha + "T00:00:00").toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long" })}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "#185FA5", marginTop: "2px" }}>{proximoTurno.hora} hs — {proximoTurno.estado}</div>
+                    </div>
+                    <button onClick={() => router.push("/calendario-terapia")} style={{ background: "#185FA5", color: "#fff", border: "none", borderRadius: "6px", padding: "6px 14px", cursor: "pointer", fontSize: "12px" }}>
+                      Ver calendario
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ color: "#6b7a8f", fontSize: "13px", marginBottom: "10px" }}>No tiene proximo turno agendado</div>
+                )}
+                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                  <button onClick={() => router.push("/calendario-terapia")} style={{ flex: 1, background: "#185FA5", color: "#fff", border: "none", borderRadius: "6px", padding: "8px", cursor: "pointer", fontSize: "13px" }}>
+                    Agendar nueva sesion
+                  </button>
+                  <button onClick={() => router.push("/terapias/" + cliente.id)} style={{ flex: 1, background: "#E6F1FB", color: "#185FA5", border: "none", borderRadius: "6px", padding: "8px", cursor: "pointer", fontSize: "13px" }}>
+                    Ver historial
+                  </button>
+                </div>
+              </div>
+            )}
 
           <div style={{ background: "#fff", border: "1px solid #dde3ec", borderRadius: "8px", padding: "20px", marginBottom: "20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
