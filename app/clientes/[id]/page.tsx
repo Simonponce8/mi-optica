@@ -11,6 +11,8 @@ export default function ClienteDetalle() {
   const [lentes, setLentes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [eliminando, setEliminando] = useState(null);
+  const [esTerapia, setEsTerapia] = useState(false);
+  const [guardandoTerapia, setGuardandoTerapia] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -23,7 +25,7 @@ export default function ClienteDetalle() {
 
   const cargarDatos = async () => {
     const { data: cl } = await supabase.from("clientes").select("*").eq("id", params.id).single();
-    if (cl) setCliente(cl);
+    if (cl) { setCliente(cl); setEsTerapia(cl.es_paciente_terapia || false); }
     const { data: fi } = await supabase.from("fichas_opticas").select("*").eq("cliente_id", params.id).order("fecha_examen", { ascending: false });
     if (fi) setFichas(fi);
     const { data: le } = await supabase.from("lentes_contacto").select("*").eq("cliente_id", params.id).order("fecha", { ascending: false });
@@ -47,6 +49,14 @@ export default function ClienteDetalle() {
     cargarDatos();
   };
 
+  const toggleTerapia = async () => {
+    setGuardandoTerapia(true);
+    const nuevoValor = !esTerapia;
+    await supabase.from("clientes").update({ es_paciente_terapia: nuevoValor }).eq("id", params.id);
+    setEsTerapia(nuevoValor);
+    setGuardandoTerapia(false);
+  };
+
   const eliminarCliente = async () => {
     if (!confirm("Estas seguro que queres eliminar este cliente? Se eliminaran todas sus fichas y registros. Esta accion no se puede deshacer.")) return;
     await supabase.from("clientes").delete().eq("id", params.id);
@@ -63,6 +73,9 @@ export default function ClienteDetalle() {
     { label: "Lentes de contacto", path: "/lentes-contacto" },
     { label: "Ventas", path: "/ventas" },
     { label: "Cuenta corriente", path: "/cuenta-corriente" },
+    { label: "Por oftalmologo", path: "/oftalmologos" },
+    { label: "Eval. Neurosensorial", path: "/neurosensorial" },
+    { label: "Terapias", path: "/terapias" },
   ];
 
   return (
@@ -135,6 +148,12 @@ export default function ClienteDetalle() {
                 <div style={{ color: "#1e3a5f", fontSize: "13px" }}>{cliente.observaciones}</div>
               </div>
             )}
+            <div style={{ marginTop: "14px", paddingTop: "14px", borderTop: "1px solid #f0f2f5" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "#1e3a5f", cursor: "pointer" }}>
+                <input type="checkbox" checked={esTerapia} onChange={toggleTerapia} disabled={guardandoTerapia} style={{ cursor: "pointer", width: "16px", height: "16px" }} />
+                Agregar a Terapias
+              </label>
+            </div>
           </div>
 
           <div style={{ background: "#fff", border: "1px solid #dde3ec", borderRadius: "8px", padding: "20px", marginBottom: "20px" }}>
